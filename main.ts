@@ -1,4 +1,4 @@
-import sodium from "https://deno.land/x/sodium@0.2.0/basic.ts";
+import { GitHubSodiumSealer } from "@hugoalh/github-sodium";
 
 interface RepoConfig {
   templateOwner: string;
@@ -176,12 +176,10 @@ async function createGithubSecrets(config: RepoConfig): Promise<void> {
   };
 
   const publicKey = await getPublicKey(config, config.newRepo);
+  const sealer = new GitHubSodiumSealer(publicKey.key);
 
   for (const [name, value] of Object.entries(secrets)) {
-    const binkey = sodium.from_base64(publicKey.key);
-    const binsec = sodium.from_string(value);
-    const encBytes = sodium.crypto_box_seal(binsec, binkey);
-    const encryptedValue = sodium.to_base64(encBytes);
+    const encryptedValue = sealer.encrypt(value);
 
     const url = `https://api.github.com/repos/${config.newOwner}/${config.newRepo}/actions/secrets/${name}`;
     

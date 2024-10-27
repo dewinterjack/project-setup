@@ -3,6 +3,7 @@
     "dev": "deno run --watch main.ts"
   },
   "imports": {
+    "@hugoalh/github-sodium": "jsr:@hugoalh/github-sodium@^5.0.3",
     "@std/assert": "jsr:@std/assert@1"
   }
 }

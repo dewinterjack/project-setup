@@ -1,10 +1,18 @@
 {
   "version": "4",
   "specifiers": {
+    "jsr:@hugoalh/github-sodium@^5.0.3": "5.0.3",
     "jsr:@std/assert@1": "1.0.6",
-    "jsr:@std/internal@^1.0.4": "1.0.4"
+    "jsr:@std/internal@^1.0.4": "1.0.4",
+    "npm:libsodium-wrappers@0.7.13": "0.7.13"
   },
   "jsr": {
+    "@hugoalh/github-sodium@5.0.3": {
+      "integrity": "1b8ec8bceb6df905e3df2f4f89e7a4526907c54eae3c506180331888d5da5c46",
+      "dependencies": [
+        "npm:libsodium-wrappers"
+      ]
+    },
     "@std/assert@1.0.6": {
       "integrity": "1904c05806a25d94fe791d6d883b685c9e2dcd60e4f9fc30f4fc5cf010c72207",
       "dependencies": [
@@ -15,6 +23,20 @@
       "integrity": "62e8e4911527e5e4f307741a795c0b0a9e6958d0b3790716ae71ce085f755422"
     }
   },
+  "npm": {
+    "libsodium-wrappers@0.7.13": {
+      "integrity": "sha512-kasvDsEi/r1fMzKouIDv7B8I6vNmknXwGiYodErGuESoFTohGSKZplFtVxZqHaoQ217AynyIFgnOVRitpHs0Qw==",
+      "dependencies": [
+        "libsodium"
+      ]
+    },
+    "libsodium@0.7.15": {
+      "integrity": "sha512-sZwRknt/tUpE2AwzHq3jEyUU5uvIZHtSssktXq7owd++3CSgn8RGrv6UZJJBpP7+iBghBqe7Z06/2M31rI2NKw=="
+    }
+  },
+  "redirects": {
+    "https://deno.land/x/sodium/basic.ts": "https://deno.land/x/sodium@0.2.0/basic.ts"
+  },
   "remote": {
     "https://deno.land/x/sodium@0.2.0/basic.ts": "458ec1e8e90b5df3c0d8a7a7e4747dbbbd35e3ee776ac4dc7c44d3ec70784de9",
     "https://deno.land/x/sodium@0.2.0/basic_types.ts": "49e32fd3d239e183d71e2509def40a70ce0308f4d9f0552dd355be8094e2fe5f",
@@ -22,6 +44,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@hugoalh/github-sodium@^5.0.3",
       "jsr:@std/assert@1"
     ]
   }
