@@ -42,6 +42,12 @@ const ARG_CONFIGS: Record<keyof RepoConfig, ArgConfig> = {
 
 function getArg(config: ArgConfig, defaultValue?: string): string {
   const args = Deno.args;
+  
+  const equalArg = args.find(arg => arg.startsWith(`${config.argName}=`));
+  if (equalArg) {
+    return equalArg.split('=')[1];
+  }
+
   const argIndex = args.indexOf(config.argName);
   if (argIndex !== -1 && args[argIndex + 1]) {
     return args[argIndex + 1];
@@ -62,7 +68,12 @@ function getArg(config: ArgConfig, defaultValue?: string): string {
   );
 }
 
-async function createRepoFromTemplate(config: RepoConfig): Promise<void> {
+interface RepoResult {
+  repoUrl: string;
+  repoName: string;
+}
+
+async function createRepoFromTemplate(config: RepoConfig): Promise<RepoResult> {
   const url = `https://api.github.com/repos/${config.templateOwner}/${config.templateRepo}/generate`;
   
   const response = await fetch(url, {
@@ -82,7 +93,44 @@ async function createRepoFromTemplate(config: RepoConfig): Promise<void> {
     throw new Error(`Failed to create repo: ${response.statusText}`);
   }
 
-  console.log(`Repository created: https://github.com/${config.newOwner}/${config.newRepo}`);
+  const repoUrl = `https://github.com/${config.newOwner}/${config.newRepo}`;
+  console.log(`Repository created: ${repoUrl}`);
+  
+  return {
+    repoUrl,
+    repoName: config.newRepo
+  };
+}
+
+async function cloneAndEnterRepo(repoUrl: string, repoName: string): Promise<void> {
+  console.log(`Cloning repository...`);
+  
+  const cloneCommand = new Deno.Command("git", {
+    args: ["clone", `${repoUrl}.git`],
+  });
+  const cloneResult = await cloneCommand.output();
+  
+  if (!cloneResult.success) {
+    throw new Error("Failed to clone repository");
+  }
+  
+  Deno.chdir(repoName);
+  console.log(`Changed directory to: ${Deno.cwd()}`);
+}
+
+async function runTurboLink(): Promise<void> {
+  console.log('Running npx turbo link...');
+  
+  const turboCommand = new Deno.Command("npx", {
+    args: ["turbo", "link"],
+  });
+  const turboResult = await turboCommand.output();
+  
+  if (!turboResult.success) {
+    throw new Error("Failed to run turbo link");
+  }
+  
+  console.log('Successfully linked turbo repository');
 }
 
 if (import.meta.main) {
@@ -94,6 +142,11 @@ if (import.meta.main) {
     token: getArg(ARG_CONFIGS.token),
   };
 
-  createRepoFromTemplate(config)
-    .catch(console.error);
+  try {
+    const { repoUrl, repoName } = await createRepoFromTemplate(config);
+    await cloneAndEnterRepo(repoUrl, repoName);
+    await runTurboLink();
+  } catch (error) {
+    console.error(error);
+  }
 }
