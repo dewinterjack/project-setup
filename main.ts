@@ -6,19 +6,60 @@ interface RepoConfig {
   token: string;
 }
 
-function getGithubToken(): string {
+interface ArgConfig {
+  argName: string;
+  envVar: string;
+  friendlyName: string;
+}
+
+const ARG_CONFIGS: Record<keyof RepoConfig, ArgConfig> = {
+  templateOwner: {
+    argName: '--template-owner',
+    envVar: 'TEMPLATE_OWNER',
+    friendlyName: 'Template owner',
+  },
+  templateRepo: {
+    argName: '--template-repo',
+    envVar: 'TEMPLATE_REPO',
+    friendlyName: 'Template repository',
+  },
+  newOwner: {
+    argName: '--owner',
+    envVar: 'GITHUB_OWNER',
+    friendlyName: 'New owner',
+  },
+  newRepo: {
+    argName: '--name',
+    envVar: 'GITHUB_REPO_NAME',
+    friendlyName: 'Repository name',
+  },
+  token: {
+    argName: '--token',
+    envVar: 'GITHUB_TOKEN',
+    friendlyName: 'GitHub token',
+  },
+};
+
+function getArg(config: ArgConfig, defaultValue?: string): string {
   const args = Deno.args;
-  const tokenIndex = args.indexOf('--token');
-  if (tokenIndex !== -1 && args[tokenIndex + 1]) {
-    return args[tokenIndex + 1];
+  const argIndex = args.indexOf(config.argName);
+  if (argIndex !== -1 && args[argIndex + 1]) {
+    return args[argIndex + 1];
   }
 
-  const envToken = Deno.env.get('GITHUB_TOKEN');
-  if (envToken) {
-    return envToken;
+  const envValue = Deno.env.get(config.envVar);
+  if (envValue) {
+    return envValue;
   }
 
-  throw new Error('GitHub token not provided. Use --token argument or set GITHUB_TOKEN environment variable');
+  if (defaultValue !== undefined) {
+    console.log(`${config.friendlyName} not provided, defaulting to: ${defaultValue}`);
+    return defaultValue;
+  }
+
+  throw new Error(
+    `${config.friendlyName} not provided. Use ${config.argName} argument or set ${config.envVar} environment variable`
+  );
 }
 
 async function createRepoFromTemplate(config: RepoConfig): Promise<void> {
@@ -46,11 +87,11 @@ async function createRepoFromTemplate(config: RepoConfig): Promise<void> {
 
 if (import.meta.main) {
   const config: RepoConfig = {
-    templateOwner: 'example-owner',
-    templateRepo: 'example-template',
-    newOwner: 'your-username',
-    newRepo: 'new-repo-name',
-    token: getGithubToken(),
+    templateOwner: getArg(ARG_CONFIGS.templateOwner, 'dewinterjack'),
+    templateRepo: getArg(ARG_CONFIGS.templateRepo, 't3-turbo-and-clerk'),
+    newOwner: getArg(ARG_CONFIGS.newOwner),
+    newRepo: getArg(ARG_CONFIGS.newRepo),
+    token: getArg(ARG_CONFIGS.token),
   };
 
   createRepoFromTemplate(config)
