@@ -15,6 +15,11 @@
       "integrity": "62e8e4911527e5e4f307741a795c0b0a9e6958d0b3790716ae71ce085f755422"
     }
   },
+  "remote": {
+    "https://deno.land/x/sodium@0.2.0/basic.ts": "458ec1e8e90b5df3c0d8a7a7e4747dbbbd35e3ee776ac4dc7c44d3ec70784de9",
+    "https://deno.land/x/sodium@0.2.0/basic_types.ts": "49e32fd3d239e183d71e2509def40a70ce0308f4d9f0552dd355be8094e2fe5f",
+    "https://deno.land/x/sodium@0.2.0/dist/browsers/sodium.js": "169e09bb1d056fd4700c95edbdb399d8050d685ce44b40f520e35a021167d520"
+  },
   "workspace": {
     "dependencies": [
       "jsr:@std/assert@1"

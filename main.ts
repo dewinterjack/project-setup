@@ -1,9 +1,13 @@
+import sodium from "https://deno.land/x/sodium@0.2.0/basic.ts";
+
 interface RepoConfig {
   templateOwner: string;
   templateRepo: string;
   newOwner: string;
   newRepo: string;
   token: string;
+  turboToken: string;
+  turboTeam: string;
 }
 
 interface ArgConfig {
@@ -37,6 +41,16 @@ const ARG_CONFIGS: Record<keyof RepoConfig, ArgConfig> = {
     argName: '--token',
     envVar: 'GITHUB_TOKEN',
     friendlyName: 'GitHub token',
+  },
+  turboToken: {
+    argName: '--turbo-token',
+    envVar: 'TURBO_TOKEN',
+    friendlyName: 'Turbo token',
+  },
+  turboTeam: {
+    argName: '--turbo-team',
+    envVar: 'TURBO_TEAM',
+    friendlyName: 'Turbo team',
   },
 };
 
@@ -133,6 +147,64 @@ async function runTurboLink(): Promise<void> {
   console.log('Successfully linked turbo repository');
 }
 
+async function getPublicKey(config: RepoConfig, repoName: string): Promise<{ keyId: string; key: string }> {
+  const url = `https://api.github.com/repos/${config.newOwner}/${repoName}/actions/secrets/public-key`;
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json',
+      'Authorization': `token ${config.token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to get public key: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return {
+    keyId: data.key_id,
+    key: data.key,
+  };
+}
+
+async function createGithubSecrets(config: RepoConfig): Promise<void> {
+  console.log('Creating GitHub Action secrets...');
+  
+  const secrets = {
+    'TURBO_TOKEN': config.turboToken,
+    'TURBO_TEAM': config.turboTeam
+  };
+
+  const publicKey = await getPublicKey(config, config.newRepo);
+
+  for (const [name, value] of Object.entries(secrets)) {
+    const binkey = sodium.from_base64(publicKey.key);
+    const binsec = sodium.from_string(value);
+    const encBytes = sodium.crypto_box_seal(binsec, binkey);
+    const encryptedValue = sodium.to_base64(encBytes);
+
+    const url = `https://api.github.com/repos/${config.newOwner}/${config.newRepo}/actions/secrets/${name}`;
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': `token ${config.token}`,
+      },
+      body: JSON.stringify({
+        encrypted_value: encryptedValue,
+        key_id: publicKey.keyId
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create secret ${name}: ${response.statusText}`);
+    }
+    
+    console.log(`Successfully created secret: ${name}`);
+  }
+}
+
 if (import.meta.main) {
   const config: RepoConfig = {
     templateOwner: getArg(ARG_CONFIGS.templateOwner, 'dewinterjack'),
@@ -140,12 +212,15 @@ if (import.meta.main) {
     newOwner: getArg(ARG_CONFIGS.newOwner),
     newRepo: getArg(ARG_CONFIGS.newRepo),
     token: getArg(ARG_CONFIGS.token),
+    turboToken: getArg(ARG_CONFIGS.turboToken),
+    turboTeam: getArg(ARG_CONFIGS.turboTeam),
   };
 
   try {
     const { repoUrl, repoName } = await createRepoFromTemplate(config);
     await cloneAndEnterRepo(repoUrl, repoName);
     await runTurboLink();
+    await createGithubSecrets(config);
   } catch (error) {
     console.error(error);
   }
